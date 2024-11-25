@@ -64,4 +64,4 @@
          (error "unknow expression type -- DERIV" exp))))
 
 
-(deriv '(* (* 5 x) (* 2 x) 7) 'x)
+(deriv '(+ (* 5 x) (* 2 x) 7) 'x)
