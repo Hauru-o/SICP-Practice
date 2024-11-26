@@ -30,6 +30,12 @@
         ((and (number? m1) (number? m2)) (* m1 m2))
         (else (make-product-list (list m1 m2)))))
 
+(define (accumulate combiner null-value expr)
+  (if (null? expr)
+      null-value
+      (combiner (car expr)
+                (accumulate combiner null-value (cdr expr)))))
+
 (define (smallest-op expr)
   (accumulate (lambda (a b)
                 (if (operator? b)
@@ -46,9 +52,27 @@
 
 (define (operator? x)
   (define (loop op-pair)
-    (cond ((null? no-pair) #f)
+    (cond ((null? op-pair) #f)
           ((eq? x (caar op-pair)) #t)
           (else (loop (cdr op-pair)))))
+  (loop *precedence-table*))
+
+(define (min-precedence a b)
+  (if (precedence<? a b)
+      a
+      b))
+
+(define (precedence<? a b)
+  (< (precedence a) (precedence b)))
+
+(define (precedence op)
+  (define (loop op-pair)
+    (cond ((null? op-pair)
+           (error "Operator not defined -- PRECEDENCE:" op))
+          ((eq? op (caar op-pair))
+           (cadr op-pair))
+          (else
+           (loop (cdr op-pair)))))
   (loop *precedence-table*))
 
 (define (sum? x)
@@ -57,12 +81,28 @@
 (define (product? x)
   (eq? '* (smallest-op x)))
 
-(define (addend s) (cadr s))
-(define (augend s)
-  (let ((a (cddr s)))
-    (if (= (length a) 1)
+; (define (addend s) (cadr s))
+; (define (augend s)
+;   (let ((a (cddr s)))
+;     (if (= (length a) 1)
+;         (car a)
+;         (make-sum-list a))))
+(define (addend expr)
+  (let ((a (prefix '+ expr)))
+    (if (singleton? a)
         (car a)
-        (make-sum-list a))))
+        a)))
+(define (augend expr)
+  (let ((a (cdr (memq '+ expr))))
+    (if (singleton? a)
+        (car a)
+        a)))
+
+(define (prefix sym list)
+  (if (or (null? list) (eq? sym (car list)))
+      '()
+      (cons (car list) (prefix sym (cdr list)))))
+
 (define (multiplier p) (cadr p))
 (define (multiplicand p)
   (let ((m (cddr p)))
@@ -85,6 +125,3 @@
                         (multiplicand exp))))
         (else
          (error "unknow expression type -- DERIV" exp))))
-
-
-(deriv '(+ (* 5 x) (* 2 x) 7) 'x)
