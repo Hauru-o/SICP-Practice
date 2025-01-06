@@ -8,7 +8,16 @@
                  dict
                  'failed)
              'failed))
-        *** Pattern variable clauses
+        ((arbitrary-constant? pat)
+         (if (constant? exp)
+             (extend-dict pat exp dict)
+             'failed))
+        ((arbitrary-variable? pat)
+         (if (variable? exp)
+             (extend-dict pat exp dict)
+             'failed))
+        ((arbitrary-expression? pat)
+         (extend-dict pat exp dict))
         ((atom? exp) 'failed)
         (else
          (match (cdr pat)
@@ -16,3 +25,22 @@
            (match (car pat)
              (car exp)
              dict)))))
+
+(define (instantiate skeleton dict)
+  (define (loop s)
+    (cond ((atom? s) s)
+          ((skeleton-evaluation? s)
+           (evaluate (eval-exp s) dict))
+          (else (cons (loop (car s))
+                      (loop (cdr s))))))
+  (loop skeleton))
+
+(define (evaluate form dict)
+  (if (atom? form)
+      (lookup form dict)
+      (apply
+       (eval (lookup (car form) dict)
+             user-initial-environment)
+       (mapcar (lambda (v)
+                 (lookup v dict))
+               (cdr form)))))
