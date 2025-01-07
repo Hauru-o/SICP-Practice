@@ -57,6 +57,33 @@
               (simplify-parts (cdr exp)))))
   (define (try-rules exp)
     (define (scan rules)
-      ***)
+      (if (null? rules)
+          exp
+          (let ((dict
+                 (match (pattern (car rules))
+                   exp
+                   (empty-dictionary))))
+            (if (eq? dict 'failed)
+                (scan (cdr rules))
+                (simplify-exp
+                 (instantiate
+                     (skeleton (car rules))
+                   dict))))))
     (scan the-rules))
   simplify-exp)
+
+(define (empty-dictionary) '())
+
+(define (extend-dictionary pat dat dict)
+  (let ((name (variable-name pat)))
+    (let ((v (assq name dict)))
+      (cond ((null? v)
+             (cons (list name dat) dict))
+            ((eq? (cadr v) dat) dict)
+            (else 'failed)))))
+
+(define (lookup var dict)
+  (let ((v (assq var dict)))
+    (if (null? v)
+        var
+        (cadr v))))
