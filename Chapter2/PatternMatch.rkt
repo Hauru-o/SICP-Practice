@@ -1,4 +1,33 @@
-#lang sicp
+#lang racket
+
+(define user-initial-environment (make-base-namespace))
+
+(define (atom? x)
+  (not (or (pair? x) (null? x))))
+
+;; Expressions
+
+(define (compound? exp) (pair?   exp))
+(define (constant? exp) (number? exp))
+(define (variable? exp) (atom?   exp))
+
+;; Rules
+
+(define (pattern  rule) (car  rule))
+(define (skeleton rule) (cadr rule))
+
+;; Patterns
+
+(define (arbitrary-constant?    pattern)
+  (if (pair? pattern) (eq? (car pattern) '?c) false))
+
+(define (arbitrary-expression?  pattern)
+  (if (pair? pattern) (eq? (car pattern) '? ) false))
+
+(define (arbitrary-variable?    pattern)
+  (if (pair? pattern) (eq? (car pattern) '?v) false))
+
+(define (variable-name pattern) (cadr pattern))
 
 (define (match pat exp dict)
   (cond ((eq? dict 'failed) 'failed)
@@ -10,14 +39,14 @@
              'failed))
         ((arbitrary-constant? pat)
          (if (constant? exp)
-             (extend-dict pat exp dict)
+             (extend-dictionary pat exp dict)
              'failed))
         ((arbitrary-variable? pat)
          (if (variable? exp)
-             (extend-dict pat exp dict)
+             (extend-dictionary pat exp dict)
              'failed))
         ((arbitrary-expression? pat)
-         (extend-dict pat exp dict))
+         (extend-dictionary pat exp dict))
         ((atom? exp) 'failed)
         (else
          (match (cdr pat)
@@ -25,6 +54,11 @@
            (match (car pat)
              (car exp)
              dict)))))
+
+(define (skeleton-evaluation?    skeleton)
+  (if (pair? skeleton) (eq? (car skeleton) ':) false))
+
+(define (eval-exp evaluation) (cadr evaluation))
 
 (define (instantiate skeleton dict)
   (define (loop s)
@@ -41,9 +75,9 @@
       (apply
        (eval (lookup (car form) dict)
              user-initial-environment)
-       (mapcar (lambda (v)
-                 (lookup v dict))
-               (cdr form)))))
+       (map (lambda (v)
+              (lookup v dict))
+            (cdr form)))))
 
 (define (simplifier the-rules)
   (define (simplify-exp exp)
