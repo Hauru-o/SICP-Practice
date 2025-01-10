@@ -1,5 +1,7 @@
 #lang racket
 
+(require racket/trace)
+
 (define user-initial-environment (make-base-namespace))
 
 ;;; Scheme code from the Pattern Matcher lecture
@@ -44,15 +46,21 @@
 
 (define (simplifier the-rules)
   (define (simplify-exp exp)
+    (trace simplify-exp)
     (try-rules (if (compound? exp)
                    (simplify-parts exp)
                    exp)))
   (define (simplify-parts exp)
+    (trace simplify-parts)
+    (displayln (format "simplify-parts called with: ~a" exp))  ; 打印 exp
     (if (null? exp)
         '()
-        (cons (simplify-exp   (car exp))
-              (simplify-parts (cdr exp)))))
+        (begin
+          (displayln (format "simplify-parts: car = ~a, cdr = ~a" (car exp) (cdr exp)))
+          (cons (simplify-exp   (car exp))
+                (simplify-parts (cdr exp))))))
   (define (try-rules exp)
+    (trace try-rules)
     (define (scan rules)
       (if (null? rules)
           exp
@@ -73,7 +81,8 @@
 (define (extend-dictionary pat dat dictionary)
   (let ((vname (variable-name pat)))
     (let ((v (assq vname dictionary)))
-      (cond ((null? v)
+      ;;(cond ((null? v)
+      (cond ((eq? v #f)
              (cons (list vname dat) dictionary))
             ((eq? (cadr v) dat) dictionary)
             (else 'failed)))))
@@ -192,6 +201,11 @@
   (displayln (list 'Input '(dd (* x y) y) 'Output (dsimp '(dd (* x y) y))))
   (displayln (list 'Input '(dd (** x 2) x) 'Output (dsimp '(dd (** x 2) x))))
   (newline))
+
+
+(null? '())
+
+(match '(? op) '+ '())
 
 ;; 运行测试
 (test-algebra-simplification)
