@@ -3,7 +3,7 @@
 (define user-initial-environment (make-base-namespace))
 
 (define (atom? x)
-  (not (or (pair? x) (null? x))))
+  (not (pair? x)))
 
 ;; Expressions
 
@@ -111,13 +111,79 @@
 (define (extend-dictionary pat dat dict)
   (let ((name (variable-name pat)))
     (let ((v (assq name dict)))
-      (cond ((null? v)
+      (cond ((or (null? v) (not v))
              (cons (list name dat) dict))
             ((eq? (cadr v) dat) dict)
             (else 'failed)))))
 
 (define (lookup var dict)
   (let ((v (assq var dict)))
-    (if (null? v)
+    (if (or (null? v) (not v))
         var
         (cadr v))))
+
+
+(define algebra-rules
+  '(
+    ( ((? op) (?c c1) (?c c2))                (: (op c1 c2))                )
+    ( ((? op) (?  e ) (?c c ))                ((: op) (: c) (: e))          )
+    ( (+ 0 (? e))                             (: e)                         )
+    ( (* 1 (? e))                             (: e)                         )
+    ( (* 0 (? e))                             0                             )
+    ( (* (?c c1) (* (?c c2) (? e )))          (* (: (* c1 c2)) (: e))       )
+    ( (* (?  e1) (* (?c c ) (? e2)))          (* (: c ) (* (: e1) (: e2)))  )
+    ( (* (* (? e1) (? e2)) (? e3))            (* (: e1) (* (: e2) (: e3)))  )
+    ( (+ (?c c1) (+ (?c c2) (? e )))          (+ (: (+ c1 c2)) (: e))       )
+    ( (+ (?  e1) (+ (?c c ) (? e2)))          (+ (: c ) (+ (: e1) (: e2)))  )
+    ( (+ (+ (? e1) (? e2)) (? e3))            (+ (: e1) (+ (: e2) (: e3)))  )
+    ( (+ (* (?c c1) (? e)) (* (?c c2) (? e))) (* (: (+ c1 c2)) (: e))       )
+    ( (* (? e1) (+ (? e2) (? e3)))            (+ (* (: e1) (: e2))
+                                                 (* (: e1) (: e3)))         )
+    ))
+
+(define algsimp (simplifier algebra-rules))
+
+;; Symbolic Differentiation
+
+(define deriv-rules
+  '(
+    ( (dd (?c c) (? v))              0                                 )
+    ( (dd (?v v) (? v))              1                                 )
+    ( (dd (?v u) (? v))              0                                 )
+    ( (dd (+ (? x1) (? x2)) (? v))   (+ (dd (: x1) (: v))
+                                        (dd (: x2) (: v)))             )
+    ( (dd (* (? x1) (? x2)) (? v))   (+ (* (: x1) (dd (: x2) (: v)))
+                                        (* (dd (: x1) (: v)) (: x2)))  )
+    ( (dd (** (? x) (?c n)) (? v))   (* (* (: n) (+ (: x) (: (- n 1))))
+                                        (dd (: x) (: v)))              )
+    ))
+
+(define dsimp (simplifier deriv-rules))
+
+;; 测试代数简化
+(define (test-algebra-simplification)
+  (displayln "Testing Algebra Simplification:")
+  (displayln (list 'Input '(+ 0 x) 'Output (algsimp '(+ 0 x))))
+  (displayln (list 'Input '(* 1 x) 'Output (algsimp '(* 1 x))))
+  (displayln (list 'Input '(* 0 x) 'Output (algsimp '(* 0 x))))
+  (displayln (list 'Input '(* 2 (* 3 x)) 'Output (algsimp '(* 2 (* 3 x)))))
+  (displayln (list 'Input '(+ 2 (+ 3 x)) 'Output (algsimp '(+ 2 (+ 3 x)))))
+  (displayln (list 'Input '(+ (* 2 x) (* 3 x)) 'Output (algsimp '(+ (* 2 x) (* 3 x)))))
+  (displayln (list 'Input '(* x (+ y z)) 'Output (algsimp '(* x (+ y z)))))
+  (newline))
+
+;; 测试符号求导
+(define (test-symbolic-differentiation)
+  (displayln "Testing Symbolic Differentiation:")
+  (displayln (list 'Input '(dd 3 x) 'Output (dsimp '(dd 3 x))))
+  (displayln (list 'Input '(dd x x) 'Output (dsimp '(dd x x))))
+  (displayln (list 'Input '(dd y x) 'Output (dsimp '(dd y x))))
+  (displayln (list 'Input '(dd (+ x y) x) 'Output (dsimp '(dd (+ x y) x))))
+  (displayln (list 'Input '(dd (* x y) x) 'Output (dsimp '(dd (* x y) x))))
+  (displayln (list 'Input '(dd (* x y) y) 'Output (dsimp '(dd (* x y) y))))
+  (displayln (list 'Input '(dd (** x 2) x) 'Output (dsimp '(dd (** x 2) x))))
+  (newline))
+
+;; 运行测试
+(test-algebra-simplification)
+(test-symbolic-differentiation)
