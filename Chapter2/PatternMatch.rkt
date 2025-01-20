@@ -2,6 +2,8 @@
 
 (define user-initial-environment (make-base-namespace))
 
+(require racket/trace)
+
 (define (atom? x)
   (not (pair? x)))
 
@@ -81,10 +83,12 @@
 
 (define (simplifier the-rules)
   (define (simplify-exp exp)
+    (trace simplify-exp)
     (try-rules (if (compound? exp)
                    (simplify-parts exp)
                    exp)))
   (define (simplify-parts exp)
+    (trace simplify-parts)
     (if (null? exp)
         '()
         (cons (simplify-exp (car exp))
@@ -159,29 +163,32 @@
     ))
 
 (define dsimp (simplifier deriv-rules))
+(trace dsimp)
 
 ;; 测试代数简化
 (define (test-algebra-simplification)
   (displayln "Testing Algebra Simplification:")
-  (displayln (list 'Input '(+ 0 x) 'Output (algsimp '(+ 0 x))))
-  (displayln (list 'Input '(* 1 x) 'Output (algsimp '(* 1 x))))
-  (displayln (list 'Input '(* 0 x) 'Output (algsimp '(* 0 x))))
-  (displayln (list 'Input '(* 2 (* 3 x)) 'Output (algsimp '(* 2 (* 3 x)))))
-  (displayln (list 'Input '(+ 2 (+ 3 x)) 'Output (algsimp '(+ 2 (+ 3 x)))))
-  (displayln (list 'Input '(+ (* 2 x) (* 3 x)) 'Output (algsimp '(+ (* 2 x) (* 3 x)))))
-  (displayln (list 'Input '(* x (+ y z)) 'Output (algsimp '(* x (+ y z)))))
+  ; (displayln (list 'Input '(+ 0 x) 'Output (algsimp '(+ 0 x))))
+  ; (displayln (list 'Input '(* 1 x) 'Output (algsimp '(* 1 x))))
+  ; (displayln (list 'Input '(* 0 x) 'Output (algsimp '(* 0 x))))
+  ; (displayln (list 'Input '(* 2 (* 3 x)) 'Output (algsimp '(* 2 (* 3 x)))))
+  ; (displayln (list 'Input '(+ 2 (+ 3 x)) 'Output (algsimp '(+ 2 (+ 3 x)))))
+  ; (displayln (list 'Input '(+ (* 2 x) (* 3 x)) 'Output (algsimp '(+ (* 2 x) (* 3 x)))))
+  ; (displayln (list 'Input '(* x (+ y z)) 'Output (algsimp '(* x (+ y z)))))
+  (displayln (list 'Input '(+ x x) 'Output (algsimp '(+ x x))))
   (newline))
 
 ;; 测试符号求导
 (define (test-symbolic-differentiation)
   (displayln "Testing Symbolic Differentiation:")
-  (displayln (list 'Input '(dd 3 x) 'Output (dsimp '(dd 3 x))))
-  (displayln (list 'Input '(dd x x) 'Output (dsimp '(dd x x))))
-  (displayln (list 'Input '(dd y x) 'Output (dsimp '(dd y x))))
-  (displayln (list 'Input '(dd (+ x y) x) 'Output (dsimp '(dd (+ x y) x))))
-  (displayln (list 'Input '(dd (* x y) x) 'Output (dsimp '(dd (* x y) x))))
-  (displayln (list 'Input '(dd (* x y) y) 'Output (dsimp '(dd (* x y) y))))
-  (displayln (list 'Input '(dd (** x 2) x) 'Output (dsimp '(dd (** x 2) x))))
+  ;;(displayln (list 'Input '(dd 3 x) 'Output (dsimp '(dd 3 x))))
+  ;;(displayln (list 'Input '(dd x x) 'Output (dsimp '(dd x x))))
+  ;;(displayln (list 'Input '(dd y x) 'Output (dsimp '(dd y x))))
+  ;;(displayln (list 'Input '(dd (+ x y) x) 'Output (dsimp '(dd (+ x y) x))))
+  ;;(displayln (list 'Input '(dd (* x y) x) 'Output (dsimp '(dd (* x y) x))))
+  ;;(displayln (list 'Input '(dd (* x y) y) 'Output (dsimp '(dd (* x y) y))))
+  ;;(displayln (list 'Input '(dd (** x 2) x) 'Output (dsimp '(dd (** x 2) x))))
+  (displayln (list 'Input '(dd (* x x) x) 'Output (algsimp (dsimp '(dd (* x x) x)))))
   (newline))
 
 ;; 运行测试
