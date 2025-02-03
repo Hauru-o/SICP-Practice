@@ -39,6 +39,32 @@
 (define (contents datum)
   (cdr datum))
 
+(define (operate op obj)
+  (let ((proc (get (type obj) op)))
+    (if (not (null? proc))
+        (proc (contents obj))
+        (error "undefine op"))))
+
+(define (operate-2 op arg1 arg2)
+  (if
+   (eq? (type arg1) (type arg2))
+   (let ((proc (get (type arg1) op)))
+     (if (not (null? proc))
+         (proc (contents arg1)
+               (contents arg2))
+         (error
+          "Op undefined on type")))
+   (error "Args not same type")))
+
+(define (ADD x y)
+  (operate-2 'add x y))
+(define (SUB x y)
+  (operate-2 'sub x y))
+(define (MUL x y)
+  (operate-2 'mul x y))
+(define (DIV x y)
+  (operate-2 'div x y))
+
 (define (rectangular? z)
   (eq? (type z) 'rectangular))
 
@@ -55,8 +81,8 @@
   (cdr z))
 
 (define (magnitude-rectangular z)
-  (sqrt (+ (square (car z))
-           (square (cdr z)))))
+  (sqrt (ADD (square (car z))
+             (square (cdr z)))))
 
 (define (angle-rectangular z)
   (atan (cdr z) (car z)))
@@ -65,10 +91,10 @@
   (attach-type 'polar (cons r a)))
 
 (define (real-part-polar z)
-  (* (car z) (cos (cdr z))))
+  (MUL (car z) (cos (cdr z))))
 
 (define (imag-part-polar z)
-  (* (car z) (sin (cdr z))))
+  (MUL (car z) (sin (cdr z))))
 
 (define (magnitude-polar z) (car z))
 
@@ -77,53 +103,40 @@
 
 (define (+c z1 z2)
   (make-rectangular
-   (+ (real-part z1) (real-part z2))
-   (+ (imag-part z1) (imag-part z2))))
+   (ADD (real-part z1) (real-part z2))
+   (ADD (imag-part z1) (imag-part z2))))
 
 (define (-c z1 z2)
   (make-rectangular
-   (- (real-part z1) (real-part z2))
-   (- (imag-part z1) (imag-part z2))))
+   (SUB (real-part z1) (real-part z2))
+   (SUB (imag-part z1) (imag-part z2))))
 
 (define (*c z1 z2)
   (make-polar
-   (* (magnitude z1) (magnitude z2))
-   (+ (angle z1) (angle z2))))
+   (MUL (magnitude z1) (magnitude z2))
+   (ADD (angle z1) (angle z2))))
 
 (define (/c z1 z2)
   (make-polar
-   (/ (magnitude z1) (magnitude z2))
-   (- (angle z1) (angle z2))))
+   (DIV (magnitude z1) (magnitude z2))
+   (SUB (angle z1) (angle z2))))
 
 (put 'rectangular 'real-part
      real-part-rectangular)
-
 (put 'rectangular 'imag-part
      imag-part-rectangular)
-
 (put 'rectangular 'magnitude
      magnitude-rectangular)
-
 (put 'rectangular 'angle
      angle-rectangular)
-
 (put 'polar 'real-part
      real-part-polar)
-
 (put 'polar 'imag-part
      imag-part-polar)
-
 (put 'polar 'magnitude
      magnitude-polar)
-
 (put 'polar 'angle
      angle-polar)
-
-(define (operate op obj)
-  (let ((proc (get (type obj) op)))
-    (if (not (null? proc))
-        (proc (contents obj))
-        (error "undefine op"))))
 
 (define (real-part z)
   (operate 'real-part z))
@@ -148,53 +161,31 @@
 
 (define (+rat x y)
   (make-rat
-   (+ (* (numer x) (denom y))
-      (* (numer y) (denom x)))
-   (* (denom x) (denom y))))
+   (ADD (MUL (numer x) (denom y))
+        (MUL (numer y) (denom x)))
+   (MUL (denom x) (denom y))))
 
 (define (*rat x y)
   (make-rat
-   (* (numer x) (numer y))
-   (* (denom x) (denom y))))
+   (MUL (numer x) (numer y))
+   (MUL (denom x) (denom y))))
 
 (define (-rat x y)
   (make-rat
-   (- (* (numer x) (denom y))
-      (* (numer y) (denom x)))
-   (* (denom x) (denom y))))
+   (SUB (MUL (numer x) (denom y))
+        (MUL (numer y) (denom x)))
+   (MUL (denom x) (denom y))))
 
 (define (/rat x y)
   (make-rat
-   (* (numer x) (denom y))
-   (* (denom x) (numer y))))
+   (MUL (numer x) (denom y))
+   (MUL (denom x) (numer y))))
 
 (put 'rational 'add +rat)
 (put 'rational 'sub -rat)
 (put 'rational 'mul *rat)
 (put 'rational 'div /rat)
 
-(define (operate-2 op arg1 arg2)
-  (if
-   (eq? (type arg1) (type arg2))
-   (let ((proc (get (type arg1) op)))
-     (if (not (null? proc))
-         (proc (contents arg1)
-               (contents arg2))
-         (error
-          "Op undefined on type")))
-   (error "Args not same type")))
-
-(define (add x y)
-  (operate-2 'add x y))
-
-(define (sub x y)
-  (operate-2 'sub x y))
-
-(define (mul x y)
-  (operate-2 'mul x y))
-
-(define (div x y)
-  (operate-2 'div x y))
 
 (define (make-complex z)
   (attach-type 'complex z))
@@ -235,3 +226,46 @@
 (put 'number 'sub -number)
 (put 'number 'mul *number)
 (put 'number 'div /number)
+
+(define (make-polynomial var term-list)
+  (attach-type 'polynomial
+               (cons var term-list)))
+
+(define (same-var? var1 var2)
+  (eq? var1 var2))
+
+(define (var p)
+  (car p))
+
+(define (+terms l1 l2)
+  (cond ((empty-termlist? l1) l2)
+        ((empty-termlist? l2) l1)
+        (else
+         (let ((t1 (first-term l1))
+               (t2 (first-term l2)))
+           (cond
+             ((> (order t1) (order t2))
+              (adjoin-term
+               t1
+               (+terms (rest-terms l1) l2)))
+             ((< (order t1) (order t2))
+              (adjoin-term
+               t2
+               (+terms l1 (rest-terms l2))))
+             (else
+              (adjoin-term
+               (make-term (order t1)
+                          (ADD (coeff t1)
+                               (coeff t2)))
+               (+terms (rest-terms l1)
+                       (rest-terms l2)))))))))
+
+(define (+poly p1 p2)
+  (if (same-var? (var p1) (var p2))
+      (make-polynomial
+       (var p1)
+       (+terms (term-list p1)
+               (term-list p2)))
+      (error "Polys not in same var")))
+
+(put 'polynomial 'add +poly)
