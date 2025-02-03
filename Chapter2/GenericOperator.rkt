@@ -237,6 +237,30 @@
 (define (var p)
   (car p))
 
+(define (term-list p)
+  (cdr p))
+
+(define (empty-termlist? lst)
+  (or (not lst) (null? lst)))
+
+(define (first-term lst)
+  (car lst))
+
+(define (rest-terms lst)
+  (cdr lst))
+
+(define (order term)
+  (car term))
+
+(define (coeff term)
+  (cdr term))
+
+(define (make-term o c)
+  (cons o c))
+
+(define (adjoin-term term termlist)
+  (cons term termlist))
+
 (define (+terms l1 l2)
   (cond ((empty-termlist? l1) l2)
         ((empty-termlist? l2) l1)
