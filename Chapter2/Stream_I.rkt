@@ -3,14 +3,39 @@
 (define (square n)
   (* n n))
 
+; (define (cons-stream x y)
+;   (cons x y))
+
+; (define (head s)
+;   (car s))
+
+; (define (tail s)
+;   (cdr s))
+
+(define (memo-proc proc)
+  (let ((already-run? #f) (result null))
+    (lambda ()
+      (if (not already-run?)
+          (begin
+            (set! result (proc))
+            (set! already-run? #t)
+            result)
+          result))))
+
+(define (delay-stream exp)
+  (memo-proc (lambda () exp)))
+
+(define (force-stream proc)
+  (proc))
+
 (define (cons-stream x y)
-  (cons x y))
+  (cons x (delay-stream y)))
 
 (define (head s)
   (car s))
 
 (define (tail s)
-  (cdr s))
+  (force-stream (cdr s)))
 
 (define (empty-stream? s)
   (null? s))
@@ -75,6 +100,11 @@
 ;     (filter odd?
 ;             (enumerate-tree tree)))))
 
+(define (fib n)
+  (if (< n 2)
+      n
+      (+ (fib (- n 1)) (fib (- n 2)))))
+
 (define (odd-fibs n)
   (accumulate
    cons
@@ -82,3 +112,62 @@
    (filter
     odd?
     (map fib (enum-interval 1 n)))))
+
+(define (flatten st-of-st)
+  (accumulate append-streams THE-EMPTY-STREAM st-of-st))
+
+(define (faltmap f s)
+  (flatten (map f s)))
+
+(define (prime? n)
+  (define (divides? x y)
+    (= (remainder y x) 0))  ; 检查y是否能被x整除
+
+  (define (check-divisors d)
+    (cond ((>= (* d d) n) #t)  ; 如果d的平方大于等于n，则n是质数
+          ((divides? d n) #f)  ; 如果d能整除n，则n不是质数
+          (else (check-divisors (+ d 1)))))  ; 否则递归检查下一个d
+
+  (and (> n 1) (check-divisors 2)))  ; 判断n是否大于1，并开始检查2到sqrt(n)的所有除数
+
+
+(define (prime-sum-pairs n)
+  (map
+   (lambda (p)
+     (list (car p)
+           (cadr p)
+           (+ (car p) (cadr p))))
+   (filter
+    (lambda (p)
+      (prime? (+ (car p) (cadr p))))
+    (faltmap
+     (lambda (i)
+       (map
+        (lambda (j) (list i j))
+        (enum-interval 1 (- i 1))))
+     (enum-interval 1 n)))))
+
+(prime-sum-pairs 5)
+
+; collect 语法糖版
+; (define (prime-sum-pairs-collect n)
+;   (collect
+;    (list i j (+ i j))
+;    ((i (enum-interval 1 n))
+;     (j (enum-interval 1 (- i 1))))
+;    (prime? (+ i j))))
+
+; 八皇后问题
+; (define (queens size)
+;   (define (fill-cols k)
+;     (if
+;      (= k 0)
+;      (singleton empty-board)
+;      (collect
+;       (adjoin-position try-row
+;                        k
+;                        rest-queens)
+;       ((rest-queens (fill-cols (- k 1)))
+;        (try-row (enum-interval 1 size)))
+;       (safe? try-row k rest-queens))))
+;   (fill-cols size))
