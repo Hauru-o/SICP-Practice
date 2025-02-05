@@ -171,3 +171,63 @@
 ;        (try-row (enum-interval 1 size)))
 ;       (safe? try-row k rest-queens))))
 ;   (fill-cols size))
+
+(define (nth-stream n s)
+  (if (= n 0)
+      (head s)
+      (nth-stream (- n 1) (tail s))))
+
+(define (print-stream s)
+  (cond ((empty-stream? s) "done")
+        (else (print (head s))
+              (print-stream (tail s)))))
+
+(define (integers-from n)
+  (cons-stream n
+               (integers-from (+ n 1))))
+
+(define integers (integers-from 1))
+
+(define (divisible? a b)
+  (= (remainder a b) 0))
+
+(define (sieve s)
+  (cons-stream
+   (head s)
+   (sieve (filter
+           (lambda (x)
+             (not
+              (divisible? x (head s))))
+           (tail s)))))
+
+(define primes (sieve (integers-from 2)))
+
+(define ones (cons-stream 1 ones))
+
+(define (add-streams s1 s2)
+  (cond ((empty-stream? s1) s2)
+        ((empty-stream? s2) s1)
+        (else
+         (cons-stream
+          (+ (head s1) (head s2))
+          (add-streams (tail s1) (tail s2))))))
+
+(define (scale-stream c s)
+  (map-stream (lambda (x) (* x c)) s))
+
+(define integers-increase
+  (cons-stream 1
+               (add-streams integers-increase ones)))
+
+(define (integral s initial-value dt)
+  (define int
+    (cons-stream
+     initial-value
+     (add-streams (scale-stream dt s)
+                  int)))
+  int)
+
+(define fibs
+  (cons-stream 0
+               (cons-stream 1
+                            (add-streams fibs (tail fibs)))))
