@@ -231,3 +231,25 @@
   (cons-stream 0
                (cons-stream 1
                             (add-streams fibs (tail fibs)))))
+
+
+(define y (integral (delay dy) 1 .001))
+
+(define dy (map square y))
+
+(define (fact-iter n)
+  (define (iter product counter)
+    (if (> counter n)
+        product
+        (iter (* counter product)
+              (+ counter 1))))
+  (iter 1 1))
+
+(define (make-deposit-account
+         balance deposit-stream)
+  (cons-stream
+   balance
+   (make-deposit-account
+    (+ balance (head deposit-stream))
+    (tail deposit-stream))))
+
