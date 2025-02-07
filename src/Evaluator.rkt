@@ -69,3 +69,35 @@
                              (cdr env)))
                     (else (cdr vcell))))
             (assq sym (car env)))))))
+
+(define assq
+  (lambda (sym alist)
+    (cond ((eq? alist '()) '())
+          ((eq? sym (caar alist))
+           (car alist))
+          (else
+           (assq sym (cdr alist))))))
+
+
+; ---------- (Y F) = (F (Y F)) ------------
+
+(define expt
+  (lambda (x n)
+    (cond ((= n 0) 1)
+          (else
+           (* x (expt x (- n 1)))))))
+
+(define F
+  (lambda (g)
+    (lambda (x n)
+      (cond ((= n 0) 1)
+            (else
+             (* x
+                (g x (- n 1))))))))
+
+; ((lambda (x) (x x)) (lambda (x) (x x)))
+
+(define Y
+  (lambda (f)
+    ((lambda (x) (f (x x)))
+     (lambda (x) (f (x x))))))
