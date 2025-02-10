@@ -1,30 +1,30 @@
 #lang racket
 
-;; Default eval func
-; (define eval
-;   (lambda (exp env)
-;     (cond ((number? exp) exp)
-;           ((symbol? exp) (lookup exp env))
-;           ((eq? (car exp) 'quote) (cadr exp))
-;           ((eq? (car exp) 'lambda)
-;            (list 'closure (car exp) env))
-;           ((eq? (car exp) 'cond)
-;            (evcond (cdr exp) env))
-;           (else
-;            (apply (eval (car exp) env)
-;                   (evlist (cdr exp) env))))))
+; Default eval func
+(define eval
+  (lambda (exp env)
+    (cond ((number? exp) exp)
+          ((symbol? exp) (lookup exp env))
+          ((eq? (car exp) 'quote) (cadr exp))
+          ((eq? (car exp) 'lambda)
+           (list 'closure (car exp) env))
+          ((eq? (car exp) 'cond)
+           (evcond (cdr exp) env))
+          (else
+           (apply (eval (car exp) env)
+                  (evlist (cdr exp) env))))))
 
-;; Default apply func
-; (define apply
-;   (lambda (proc args)
-;     (cond ((primitive? proc)
-;            (apply-primop proc args))
-;           ((eq? (car proc) 'closure)    ; (closure ((x) (+ x y)) <env>)
-;            (eval (cadadr proc)
-;                  (bind (caadr proc)
-;                        args
-;                        (caddr proc))))
-;           (else error))))
+; Default apply func
+(define apply
+  (lambda (proc args)
+    (cond ((primitive? proc)
+           (apply-primop proc args))
+          ((eq? (car proc) 'closure)    ; (closure ((x) (+ x y)) <env>)
+           (eval (cadadr proc)
+                 (bind (caadr proc)
+                       args
+                       (caddr proc))))
+          (else error))))
 
 ;; eavl func with dynamic bind
 ; (define eval
@@ -54,34 +54,6 @@
 ;                        args
 ;                        env)))
 ;           (else error))))
-
-
-;; eval func with args name feature
-(define eval
-  (lambda (exp env)
-    (cond ((number? exp) exp)
-          ((symbol? exp) (lookup exp env))
-          ((eq? (car exp) 'quote) (cadr exp))
-          ((eq? (car exp) 'lambda)
-           (list 'closure (car exp) env))
-          ((eq? (car exp) 'cond)
-           (evcond (cdr exp) env))
-          (else
-           (apply (eval (car exp) env)
-                  (evlist (cdr exp) env))))))
-
-;; apply func with args name feature
-(define apply
-  (lambda (proc args)
-    (cond ((primitive? proc)
-           (apply-primop proc args))
-          ((eq? (car proc) 'closure)    ; (closure ((x) (+ x y)) <env>)
-           (eval (cadadr proc)
-                 (bind (caadr proc)
-                       args
-                       (caddr proc))))
-          (else error))))
-
 
 (define evlist
   (lambda (L env)
