@@ -126,3 +126,16 @@
            (car alist))
           (else
            (assq sym (cdr alist))))))
+
+; (define (unless p c a)
+;   (cond ((not p) c)
+;         (else a)))
+
+(unless (= 1 0) 2 (/ 1 0))  ;; this will be error
+
+(cond ((not (= 1 0)) 2)     ;; this will run well
+      (else (/ 1 0)))
+
+(define (unless p (name c) (name a))
+  (cond ((not p) c)
+        (else a)))
