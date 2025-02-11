@@ -1,6 +1,7 @@
 #lang racket
 
-(define (apply-primop) '())
+(define (apply-primop op args)
+  (op (car args) (cadr args)))
 
 ; Default eval func
 (define eval
@@ -9,7 +10,7 @@
           ((symbol? exp) (lookup exp env))
           ((eq? (car exp) 'quote) (cadr exp))
           ((eq? (car exp) 'lambda)
-           (list 'closure (car exp) env))
+           (list 'closure (cdr exp) env))
           ((eq? (car exp) 'cond)
            (evcond (cdr exp) env))
           (else
@@ -202,3 +203,28 @@
 (define product-powers
   (lambda (a b n)
     (product (pgen n) a 1+ b)))
+
+(define frame0
+  (list
+   (cons '+ +)
+   (cons '- -)
+   (cons '* *)
+   (cons '/ /)))
+
+(define env0
+  (list frame0))
+
+(eval '(+ 1 2) env0)
+;; => 3
+
+(eval '(* 2 3) env0)
+;; => 6
+
+(eval '(* 2 (+ 3 4)) env0)
+;; => 14
+
+(eval '(* (+ 1 2) (+ 3 4)) env0)
+;; => 21
+
+(eval '((lambda (x) (* 2 x)) 3) env0)
+;; => 6
