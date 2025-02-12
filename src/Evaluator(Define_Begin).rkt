@@ -1,4 +1,15 @@
-#lang racket
+#lang sicp
+
+(define primitive?
+  (lambda (op)
+    (or (eq? op +)
+        (eq? op -)
+        (eq? op *)
+        (eq? op /))))
+
+(define false?
+  (lambda (x)
+    (eq? x #f)))
 
 (define frame0
   (list
@@ -13,7 +24,7 @@
 (define (apply-primop op args)
   (op (car args) (cadr args)))
 
-; Eval func with define
+; Eval func with define and begin
 (define eval
   (lambda (exp env)
     (cond ((number? exp) exp)
@@ -27,16 +38,39 @@
              env))
           ((eq? (car exp) 'cond)
            (evcond (cdr exp) env))
+          ((eq? (car exp) 'begin)
+           (evbegin (cdr exp) env))
           (else
            (apply (eval (car exp) env)
                   (evlist (cdr exp) env))))))
+
+; (define evbegin
+;   (lambda (exps env)
+;     (if (null? (cdr exps))
+;         (eval (car exps) env)
+;         (evbegin (cdr exps) env))))
+
+; (define evbegin
+;   (lambda (exps env)
+;     (cond ((null? car exps)
+;            ())))
+
+(define evbegin
+  (lambda (exprs env)
+    (define (helper exprs)
+      (if (null? (cdr exprs))
+          (eval (car exprs) env)  ;; 返回最后一个表达式的结果
+          (evbegin (cdr exprs) env))) ;; 按顺序评估
+    (helper exprs))) ;; 调用 helper 来从前向后处理
+
 
 (define define-var
   (lambda (var val env)
     (let ((frame (car env)))
       (if (eq? (assq var frame) '())
-          (set-mcar! env (cons (cons var val ) frame))
-          (set-mcdr! (assq var frame) val)))))
+          (set-car! env (cons (cons var val ) frame))
+          (error "Already Defined")))))
+
 
 ; Default apply func
 (define apply
@@ -106,12 +140,20 @@
           (else
            (assq sym (cdr alist))))))
 
-(eval '(
+(eval '(begin
+         (* 2 2)
+         (/ 2 2)) env0)
 
-        (define pow-num
-          (lambda (x)
-            (* x x)))
+(eval '(define pow-num
+         (lambda (x)
+           (* x x)))
+      env0)
 
-        (pow-num 10)
+(eval '(pow-num 10) env0)
 
-        ) env0)
+(eval '(begin
+         (double-num 8)
+         (define double-num
+           (lambda (x)
+             (* x 2)))
+         ) env0)
