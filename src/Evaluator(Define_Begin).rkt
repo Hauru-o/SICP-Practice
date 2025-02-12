@@ -50,18 +50,26 @@
 ;         (eval (car exps) env)
 ;         (evbegin (cdr exps) env))))
 
+
 ; (define evbegin
 ;   (lambda (exps env)
-;     (cond ((null? car exps)
-;            ())))
+;     (if (null? exps)
+;         (error "BEGIN requires at lest one expression")
+;         (let loop ((first (car exps)) (rest (cdr exps)))
+;           (let ((result (eval first env)))
+;             (if (null? rest)
+;                 result
+;                 (loop (car rest) (cdr rest))))))))
 
 (define evbegin
-  (lambda (exprs env)
-    (define (helper exprs)
-      (if (null? (cdr exprs))
-          (eval (car exprs) env)  ;; 返回最后一个表达式的结果
-          (evbegin (cdr exprs) env))) ;; 按顺序评估
-    (helper exprs))) ;; 调用 helper 来从前向后处理
+  (lambda (exps env)
+    (if (null? exps)
+        (error "BEGIN requires at lest one expression")
+        (let loop ((result (eval (car exps) env)) (rest (cdr exps)))
+          (if (null? rest)
+              result
+              (loop (eval (car rest) env) (cdr rest)))))))
+
 
 
 (define define-var
@@ -152,8 +160,8 @@
 (eval '(pow-num 10) env0)
 
 (eval '(begin
-         (double-num 8)
          (define double-num
            (lambda (x)
              (* x 2)))
+         (double-num 8)
          ) env0)
