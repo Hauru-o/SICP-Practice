@@ -61,15 +61,18 @@
 ;                 result
 ;                 (loop (car rest) (cdr rest))))))))
 
+; (define evbegin
+;   (lambda (exps env)
+;     (if (null? exps)
+;         (error "BEGIN requires at lest one expression")
+;         (let loop ((result (eval (car exps) env)) (rest (cdr exps)))
+;           (if (null? rest)
+;               result
+;               (loop (eval (car rest) env) (cdr rest)))))))
+
 (define evbegin
   (lambda (exps env)
-    (if (null? exps)
-        (error "BEGIN requires at lest one expression")
-        (let loop ((result (eval (car exps) env)) (rest (cdr exps)))
-          (if (null? rest)
-              result
-              (loop (eval (car rest) env) (cdr rest)))))))
-
+    (relast (evlist exps env))))
 
 
 (define define-var
@@ -98,6 +101,13 @@
           (else
            (cons (eval (car L) env)
                  (evlist (cdr L) env))))))
+
+(define relast
+  (lambda (L)
+    (cond ((eq? (cdr L) '())
+           (car L))
+          (else
+           (relast (cdr L))))))
 
 (define evcond
   (lambda (clauses env)
