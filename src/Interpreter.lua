@@ -14,8 +14,28 @@ local function cadr(x)
 	return car(cdr(x))
 end
 
+local function caar(x)
+	return car(car(x))
+end
+
+local function cadar(x)
+	return car(cdr(car(x)))
+end
+
 local function caddr(x)
 	return car(cdr(cdr(x)))
+end
+
+local function caadr(x)
+	return car(car(cdr(x)))
+end
+
+local function cadadr(x)
+	return car(cdr(car(cdr(x))))
+end
+
+local function set_car(pair, x)
+	pair[1] = x
 end
 
 local function list(...)
@@ -76,24 +96,117 @@ local function isSymbol(exp)
 	return false
 end
 
-local function eval(exp, env)
+local function evlist(L, env)
+	if L == {} then
+		return {}
+	else
+		return cons(eval(car(L), env), evlist(cdr(L), env))
+	end
+end
+
+local function evcond(clauses, env)
+	if clauses == {} then
+		return {}
+	elseif caar(clauses) == "else" then
+		return eval(cadar(clauses), env)
+	elseif not eval(caar(clauses), env) then
+		return evcond(cdr(clauses), env)
+	else
+		return eval(cadar(clauses), env)
+	end
+end
+
+local function pair_up(vars, vals)
+	if vars == {} then
+		if vals == {} then
+			return {}
+		else
+			error("Too Maney Arg")
+		end
+	elseif isSymbol(vars) then -- (x . y)
+		return cons(cons(vars, vals), {})
+	elseif vals == {} then
+		error("TFA")
+	else
+		return cons(cons(car(vars), car(vals)), pair_up(cdr(vars), cdr(vals)))
+	end
+end
+
+local function bind(vars, vals, env)
+	return cons(pair_up(vars, vals), env)
+end
+
+local function assq(sym, alist)
+	if alist == {} then
+		return {}
+	elseif sym == caar(alist) then
+		return car(alist)
+	else
+		return assq(sym, cdr(alist))
+	end
+end
+
+local function lookup(sym, env)
+	if env == {} then
+		error("Unbind Variable")
+	else
+		local vcell = assq(sym, car(env))
+
+		if vcell == {} then
+			return lookup(sym, cdr(env))
+		else
+			return cdr(vcell)
+		end
+	end
+end
+
+local function relast(L)
+	if cdr(L) == {} then
+		return car(L)
+	else
+		relast(cdr(L))
+	end
+end
+
+local function evbegin(exps, env)
+	return relast(evlist(exps, env))
+end
+
+local function evdefine(var, val, env)
+	local frame = car(env)
+
+	if assq(var, frame) == {} then
+		set_car(env, cons(cons(var, val), frame))
+	else
+		error("Already Defined")
+	end
+end
+
+function Eval(exp, env)
 	if isNumber(exp) then
 		return exp
 	elseif isSymbol(exp) then
 		return lookup(exp, env)
-	elseif oprator(exp) == 'quote' then
+	elseif oprator(exp) == "quote" then
 		return cadr(exp)
-	elseif oprator(exp) == 'lambda' then
-		return list('closure', cdr(exp), env)
-	elseif oprator(exp) == 'define' then
-		return evdefine(cadr(exp), eval(caddr(exp), env), env)
-	elseif oprator(exp) == 'cond' then
+	elseif oprator(exp) == "lambda" then
+		return list("closure", cdr(exp), env)
+	elseif oprator(exp) == "define" then
+		return evdefine(cadr(exp), Eval(caddr(exp), env), env)
+	elseif oprator(exp) == "cond" then
 		return evcond(cdr(exp), env)
-	elseif oprator(exp) == 'begin' then
+	elseif oprator(exp) == "begin" then
 		return evbegin(cdr(exp), env)
 	else
-		return apply(
-			eval(car(exp), env),
-			evlist(cdr(exp), env))
+		return Apply(Eval(car(exp), env), evlist(cdr(exp), env))
+	end
+end
+
+function Apply(proc, args)
+	if isPrimitive(proc) then
+	elseif car(proc) == "closure" then -- (closure ((x) (+ x y)) <env>)
+		return Eval(cadadr(proc), bind(caadr(proc), args, caddr(proc)))
+	else
+		error("Not closure and not primitive!")
 	end
 end
