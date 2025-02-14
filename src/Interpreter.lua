@@ -100,7 +100,7 @@ local function evlist(L, env)
 	if L == {} then
 		return {}
 	else
-		return cons(eval(car(L), env), evlist(cdr(L), env))
+		return cons(Eval(car(L), env), evlist(cdr(L), env))
 	end
 end
 
@@ -108,11 +108,11 @@ local function evcond(clauses, env)
 	if clauses == {} then
 		return {}
 	elseif caar(clauses) == "else" then
-		return eval(cadar(clauses), env)
-	elseif not eval(caar(clauses), env) then
+		return Eval(cadar(clauses), env)
+	elseif not Eval(caar(clauses), env) then
 		return evcond(cdr(clauses), env)
 	else
-		return eval(cadar(clauses), env)
+		return Eval(cadar(clauses), env)
 	end
 end
 
